@@ -11,15 +11,33 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "workspaceContains:**/container.js",
+        "workspaceContains:package.json",
+        "onCommand:extension.enableAwilixSupport"
     ],
     "main": "./extension",
     "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Awilix container",
+            "properties": {
+                "awilix.containerFile": {
+                    "type": "string",
+                    "default": "${workspaceFolder}/container.js",
+                    "description": "Container file"                
+                }
+            }
+        },
         "commands": [
             {
-                "command": "extension.sayHello",
-                "title": "Hello World"
+                "command": "extension.resolveAwilixSymbol",
+                "title": "Resolve Awilix Symbol"
+            },
+            {
+                "command": "extension.enableAwilixSupport",
+                "title": "Enable Awilix Support"
             }
+
         ]
     },
     "scripts": {
@@ -27,7 +45,7 @@
         "test": "node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "typescript": "^2.6.1",
+        "awilix": "^2.6.1",
         "vscode": "^1.1.6",
         "eslint": "^4.11.0",
         "@types/node": "^7.0.43",

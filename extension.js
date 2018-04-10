@@ -13,18 +13,27 @@ function activate(context) {
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('extension.sayHello', function () {
+    let disposableResolveAwilixSupport = vscode.commands.registerCommand('extension.resolveAwilixSymbol', function () {
         // The code you place here will be executed every time your command is executed
 
         // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
+        vscode.window.showInformationMessage('Trying to resolve awilix dependency...');
     });
 
-    context.subscriptions.push(disposable);
+    let disposableEnable = vscode.commands.registerCommand('extension.enableAwilixSupport', function () {
+        // The code you place here will be executed every time your command is executed
+
+        // Display a message box to the user
+        vscode.window.showInformationMessage('Enabling Awilix support...');
+    });
+
+    context.subscriptions.push(disposableResolveAwilixSupport);
+    context.subscriptions.push(disposableEnable);
 }
 exports.activate = activate;
 
 // this method is called when your extension is deactivated
 function deactivate() {
 }
+
 exports.deactivate = deactivate;
