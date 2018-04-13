@@ -11,8 +11,7 @@
         "Other"
     ],
     "activationEvents": [
-        "workspaceContains:**/container.js",
-        "workspaceContains:package.json",
+        "workspaceContains:node_modules/awilix/*",
         "onCommand:extension.enableAwilixSupport"
     ],
     "main": "./extension",
@@ -23,7 +22,7 @@
             "properties": {
                 "awilix.containerFile": {
                     "type": "string",
-                    "default": "${workspaceFolder}/container.js",
+                    "default": "container.js",
                     "description": "Container file"                
                 }
             }
