@@ -26,35 +26,42 @@ function activate(context) {
         .then(container => {
           const containerText = container.getText();
           const filtered = containerText
-            .match(/container\.register\({[\s\S]+?}\)/gm)
-            .join('\n')
-            .replace(/container\.register\({/g,'')
-            .replace(/}\)/g,'')
-            .replace(/asFunction\(\s*\(\)\s*=\> /gm,'')
-            .replace(/asFunction\(\s*/gm,'')
-            .replace(/\)\.singleton\(\)/gm,'')
-            .replace(/asValue\(\s*/gm,'')
-            .replace(/\),/gm,',')
-            .replace(/\n\n/g,'')
-            .replace(/\n\n/g,'')
-            .replace(/,\s*,/gm,',')
-            .replace(/:\s*(.+?),/gm,': \'$1\',');
-       
-          const containerMap = eval('new Object({' + filtered + '})');
+            .match(/\.register\({([\s\S]+?)}\);/gm)
+            .join('')
+            .replace(/\.register\({([\s\S]+?)}\);/gm,'$1')
+            .replace(/^.+?require.+?$/gm, '')
+            .replace(/(\/\/.*|\/\*[\s\S]+?\*\/)/gm,'')
+            .replace(/(asFunction|asValue)\(([\s\S]+?)\)(,|\.(singleton|transient|scoped|setLifetime)\([\s\S]*?\),)/gm,'\'$2\',')
+            .replace(/\.\.\./gm, '')
+            .replace(/\n/gm,'')
+                 
+          let containerMap = {};
+          try { 
+            containerMap = eval('new Object({' + filtered + '})') 
+          } catch(err) {
+            console.error(err);
+          }
           return Promise.all([
             containerMap, 
             vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', container.uri)
               .then(symbols => 
-                JSON.parse(JSON.stringify(symbols)).map(s => ({ 
-                  name:s.name, 
-                  line: s.location.range[0].line, 
-                  col: s.location.range[0].character,
-                }))
-              )
+                JSON.parse(JSON.stringify(symbols))
+                  .reduce((obj, s) => {
+                    obj[s.name] = s.location.range[0];
+                    return obj;
+                  }, 
+                  {})
+              ),
           ]);
         })
-        .then(([containerMap, containerSymbols]) => {
-          console.log(containerMap, containerSymbols);
+        .then(([containerMap, containerSymbolsMap]) => {
+          const containerResolved = Object.keys(containerMap).reduce((ret, key) => {
+            const name = containerMap[key]
+            ret[key] = containerSymbolsMap[name] || {};
+            ret[key].name = name;
+            return ret;
+          }, {});
+          console.dir(containerResolved);
         });
     }
   });
