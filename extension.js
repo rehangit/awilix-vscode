@@ -1,11 +1,7 @@
-const padder = cols => str => {
-  const ws = "                                           ";
-  return (str + ws).slice(0, cols);
-}
-
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+const parseContainer = require('./parseContainer');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -16,53 +12,23 @@ function activate(context) {
   console.log('Congratulations, your extension "awilix-vscode" is now active!');
   vscode.window.showInformationMessage('Awilix project detected. Awilix definitions support is activated...');
 
-  const p = padder(20);
   let disposableImplementationProvider = vscode.languages.registerImplementationProvider('javascript', {
-    provideImplementation(doc, pos, cancel) {
+    provideImplementation: async (doc, pos, cancel) => {
+      const range = doc.getWordRangeAtPosition(pos);
+      const symbol = doc.getText(range);
       console.log('Definition provider invoked.');
       const containerFile = vscode.workspace.getConfiguration('awilix').get('containerFile');
-      vscode.workspace.findFiles(containerFile, '', 1)
-        .then(files => vscode.workspace.openTextDocument(files[0].fsPath))
-        .then(container => {
-          const containerText = container.getText();
-          const filtered = containerText
-            .match(/\.register\({([\s\S]+?)}\);/gm)
-            .join('')
-            .replace(/\.register\({([\s\S]+?)}\);/gm,'$1')
-            .replace(/^.+?require.+?$/gm, '')
-            .replace(/(\/\/.*|\/\*[\s\S]+?\*\/)/gm,'')
-            .replace(/(asFunction|asValue)\(([\s\S]+?)\)(,|\.(singleton|transient|scoped|setLifetime)\([\s\S]*?\),)/gm,'\'$2\',')
-            .replace(/\.\.\./gm, '')
-            .replace(/\n/gm,'')
-                 
-          let containerMap = {};
-          try { 
-            containerMap = eval('new Object({' + filtered + '})') 
-          } catch(err) {
-            console.error(err);
-          }
-          return Promise.all([
-            containerMap, 
-            vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', container.uri)
-              .then(symbols => 
-                JSON.parse(JSON.stringify(symbols))
-                  .reduce((obj, s) => {
-                    obj[s.name] = s.location.range[0];
-                    return obj;
-                  }, 
-                  {})
-              ),
-          ]);
-        })
-        .then(([containerMap, containerSymbolsMap]) => {
-          const containerResolved = Object.keys(containerMap).reduce((ret, key) => {
-            const name = containerMap[key]
-            ret[key] = containerSymbolsMap[name] || {};
-            ret[key].name = name;
-            return ret;
-          }, {});
-          console.dir(containerResolved);
-        });
+      const container = await vscode.workspace.findFiles(containerFile, '', 1)
+        .then(files => vscode.workspace.openTextDocument(files[0].fsPath));
+    
+      const containerMap = await parseContainer(container);
+      try {
+        const pos = containerMap[symbol][0];
+        const positions = await vscode.commands.executeCommand('vscode.executeTypeDefinitionProvider', container.uri, new vscode.workspace.Position(pos.line, pos.character);
+        console.dir('Definition for', symbol, positions);
+      } catch(e) {
+        console.error(e);
+      }
     }
   });
 
