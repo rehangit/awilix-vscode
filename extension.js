@@ -16,18 +16,24 @@ function activate(context) {
     provideImplementation: async (doc, pos, cancel) => {
       const range = doc.getWordRangeAtPosition(pos);
       const symbol = doc.getText(range);
-      console.log('Definition provider invoked.');
+      console.log('Definition provider invoked.', symbol);
       const containerFile = vscode.workspace.getConfiguration('awilix').get('containerFile');
       const container = await vscode.workspace.findFiles(containerFile, '', 1)
         .then(files => vscode.workspace.openTextDocument(files[0].fsPath));
-    
+
       const containerMap = await parseContainer(container);
-      try {
-        const pos = containerMap[symbol][0];
-        const positions = await vscode.commands.executeCommand('vscode.executeTypeDefinitionProvider', container.uri, new vscode.workspace.Position(pos.line, pos.character);
-        console.dir('Definition for', symbol, positions);
-      } catch(e) {
-        console.error(e);
+      if(symbol in containerMap) {
+        try {
+          const pos = containerMap[symbol][0];
+          console.log(pos);
+          const positions = await vscode.commands.executeCommand('vscode.executeTypeDefinitionProvider', container.uri, new vscode.Position(pos.line, pos.character));
+          console.log('Definition for', symbol, positions);
+          return positions;
+        } catch(e) {
+          console.error(e);
+        }
+      } else {
+        console.log(symbol,'not in container');
       }
     }
   });
