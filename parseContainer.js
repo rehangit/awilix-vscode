@@ -2,20 +2,30 @@ const vscode = require('vscode');
 
 module.exports = async container => {
   const containerText = container.getText();
-  const filtered = containerText
+  let filtered;
+  try {
+  filtered = containerText
     .match(/\.register\({([\s\S]+?)}\);/gm)
     .join('')
+    .replace(/`/gm,'\'')
+    .replace(/${.+?}/gm,'')
     .replace(/\.register\({([\s\S]+?)}\);/gm,'$1')
     .replace(/^.+?require.+?$/gm, '')
     .replace(/(\/\/.*|\/\*[\s\S]+?\*\/)/gm,'')
     .replace(/(asFunction|asValue)\(([\s\S]+?)\)(,|\.(singleton|transient|scoped|setLifetime)\(.*?\),)/gm,'\'$2\',')
     .replace(/\.\.\./gm, '')
     .replace(/\(.*?\)\s+?=>\s+?(\S)/gm,'$1')
-    .replace(/\s+/gm,' ')
-      
+    .replace(/\(.*?\)\s+?=>\s+?(\S)/gm,'$1')
+    .replace(/\s+/gm,'')
+    .replace(/,\',/gm, '\',')
+    // .replace(/,/gm,',\n')
+  } catch(err) {
+    console.error(err, 'Filtering of container failed:');
+  }
   let containerMap = {};
   try { 
-    containerMap = eval('new Object({' + filtered + '})') 
+    containerMap = eval('new Object({' + filtered + '})');
+    // console.dir(containerMap);
   } catch(err) {
     console.error(err);
   }
@@ -30,12 +40,23 @@ module.exports = async container => {
     )
     .then(containerSymbolsMap => {
       const containerResolved = Object.keys(containerMap).reduce((ret, key) => {
-        const name = containerMap[key]
-        ret[key] = containerSymbolsMap[name] || {};
-        ret[key].name = name;
+        try {
+          if(key in containerMap) {
+            const name = containerMap[key];
+            return { 
+              ...ret,
+              [key]: {
+                name,
+                pos: containerSymbolsMap[name][0],
+              }
+            };
+          }
+        } catch (errKey) {
+          console.warn('ignored: ', key, {errKey});
+        }
         return ret;
       }, {});
-      console.dir(containerResolved);
+      // console.log(containerResolved);
       return containerResolved;
     });
   }

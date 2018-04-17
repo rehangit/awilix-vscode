@@ -10,30 +10,29 @@ function activate(context) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
   console.log('Congratulations, your extension "awilix-vscode" is now active!');
+  //vscode.window.showInformationMessage('Awilix project detected. Awilix definitions support is activated...');
+  const containerFile = vscode.workspace.getConfiguration('awilix').get('containerFile');
   vscode.window.showInformationMessage('Awilix project detected. Awilix definitions support is activated...');
+  vscode.window.setStatusBarMessage('Awilix ext conatiner file:' + containerFile, 5000);
 
   let disposableImplementationProvider = vscode.languages.registerImplementationProvider('javascript', {
     provideImplementation: async (doc, pos, cancel) => {
       const range = doc.getWordRangeAtPosition(pos);
       const symbol = doc.getText(range);
       console.log('Definition provider invoked.', symbol);
-      const containerFile = vscode.workspace.getConfiguration('awilix').get('containerFile');
       const container = await vscode.workspace.findFiles(containerFile, '', 1)
         .then(files => vscode.workspace.openTextDocument(files[0].fsPath));
 
+      
       const containerMap = await parseContainer(container);
+      console.dir('Container Map:', containerMap);
       if(symbol in containerMap) {
         try {
-          const pos = containerMap[symbol][0];
-          console.log(pos);
-          const positions = await vscode.commands.executeCommand('vscode.executeTypeDefinitionProvider', container.uri, new vscode.Position(pos.line, pos.character));
-          console.log('Definition for', symbol, positions);
-          return positions;
+          const pos = containerMap[symbol].pos;
+          return vscode.commands.executeCommand('vscode.executeTypeDefinitionProvider', container.uri, new vscode.Position(pos.line, pos.character));
         } catch(e) {
           console.error(e);
         }
-      } else {
-        console.log(symbol,'not in container');
       }
     }
   });
