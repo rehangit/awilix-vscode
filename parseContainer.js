@@ -16,16 +16,17 @@ module.exports = async container => {
     .replace(/\.\.\./gm, '')
     .replace(/\(.*?\)\s+?=>\s+?(\S)/gm,'$1')
     .replace(/\(.*?\)\s+?=>\s+?(\S)/gm,'$1')
-    .replace(/\s+/gm,'')
+    //.replace(/\s+/gm,' ')
     .replace(/,\',/gm, '\',')
     // .replace(/,/gm,',\n')
   } catch(err) {
     console.error(err, 'Filtering of container failed:');
   }
+  console.log(filtered);
   let containerMap = {};
   try { 
     containerMap = eval('new Object({' + filtered + '})');
-    // console.dir(containerMap);
+    console.dir(containerMap);
   } catch(err) {
     console.error(err);
   }

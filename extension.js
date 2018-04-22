@@ -19,10 +19,9 @@ function activate(context) {
     provideImplementation: async (doc, pos, cancel) => {
       const range = doc.getWordRangeAtPosition(pos);
       const symbol = doc.getText(range);
-      console.log('Definition provider invoked.', symbol);
-      const container = await vscode.workspace.findFiles(containerFile, '', 1)
+      console.log('Definition provider invoked:', symbol);
+      const container = await vscode.workspace.findFiles('**/'+containerFile, '', 1)
         .then(files => vscode.workspace.openTextDocument(files[0].fsPath));
-
       
       const containerMap = await parseContainer(container);
       console.dir('Container Map:', containerMap);
